@@ -1,70 +1,60 @@
 import { Injectable } from '@nestjs/common';
+import { plainToInstance } from 'class-transformer';
 import { ProductRepository } from '../repository/product.repository.js';
 import { ProductResponseDto } from '../dtos/product-response.dto.js';
+import { QueryProductsDto } from '../dtos/query-products.dto.js';
 import { PaginatedResult } from '../../common/data-accsess/base-repository.js';
-import { plainToInstance } from 'class-transformer';
+import { containsRegex } from '../../common/utils/regex.util.js';
+import { PricingService } from '../../pricing/pricing.service.js';
 
 @Injectable()
 export class FindAllProductsUseCase {
-  constructor(private readonly productRepository: ProductRepository) {}
+  constructor(
+    private readonly productRepository: ProductRepository,
+    private readonly pricing: PricingService,
+  ) {}
 
-  async execute(queryParams: Record<string, any>): Promise<PaginatedResult<ProductResponseDto>> {
-    const page = Number(queryParams.page) || 1;
-    const limit = Number(queryParams.limit) || 10;
-    const ignoreLimit = queryParams.ignoreLimit === 'true' || queryParams.ignoreLimit === true;
-    const sort = queryParams.sort;
-    const fields = queryParams.fields;
-    const keyword = queryParams.keyword;
+  async execute(query: QueryProductsDto, isStaff = false): Promise<PaginatedResult<ProductResponseDto>> {
+    const filter: Record<string, any> = {};
 
-    const filterObj: Record<string, any> = {};
-
-    // Copy and filter out excluded fields
-    const excludedFields = ['page', 'fields', 'sort', 'limit', 'keyword', 'ignoreLimit'];
-    for (const key of Object.keys(queryParams)) {
-      if (excludedFields.includes(key)) continue;
-
-      const value = queryParams[key];
-
-      // Handle bracket notation: price[gte]=100
-      const bracketMatch = key.match(/^(.+)\[(.+)\]$/);
-      if (bracketMatch) {
-        const [, fieldName, operator] = bracketMatch;
-        if (!filterObj[fieldName]) filterObj[fieldName] = {};
-        const numVal = Number(value);
-        filterObj[fieldName][`$${operator}`] = isNaN(numVal) ? value : numVal;
-      } else if (typeof value === 'object' && value !== null) {
-        filterObj[key] = {};
-        for (const opKey of Object.keys(value)) {
-          const numVal = Number(value[opKey]);
-          filterObj[key][`$${opKey}`] = isNaN(numVal) ? value[opKey] : numVal;
-        }
-      } else {
-        filterObj[key] = value;
-      }
+    // Customers never see disabled items; staff may list everything.
+    if (!isStaff || query.available !== undefined) {
+      filter.isAvailable = isStaff ? query.available : true;
     }
-
-    // Keyword search in title or description
-    if (keyword) {
-      filterObj.$or = [
-        { title: { $regex: keyword, $options: 'i' } },
-        { description: { $regex: keyword, $options: 'i' } },
+    if (query.category) filter.category = query.category;
+    if (query.subcategory) filter.subcategories = query.subcategory;
+    if (query.brand) filter.brand = query.brand;
+    if (query.minPrice !== undefined || query.maxPrice !== undefined) {
+      filter.price = {
+        ...(query.minPrice !== undefined && { $gte: query.minPrice }),
+        ...(query.maxPrice !== undefined && { $lte: query.maxPrice }),
+      };
+    }
+    if (query.minRating !== undefined) filter.ratingsAverage = { $gte: query.minRating };
+    if (query.keyword) {
+      filter.$or = [
+        { title: containsRegex(query.keyword) },
+        { titleAr: containsRegex(query.keyword) },
+        { description: containsRegex(query.keyword) },
       ];
     }
 
-    const result = await this.productRepository.findPaginated(filterObj, {
-      page,
-      limit,
-      ignoreLimit,
-      sort,
-      fields,
+    const result = await this.productRepository.findPaginated(filter, {
+      page: query.page,
+      limit: query.limit,
+      ignoreLimit: query.ignoreLimit,
+      sort: query.sort,
       populate: [
         { path: 'category', select: 'name image _id' },
         { path: 'brand', select: 'name image _id' },
         { path: 'subcategories', select: 'name _id' },
       ],
-      lean: true,
     });
 
-    return plainToInstance(PaginatedResult<ProductResponseDto>, result);
+    const priced = await this.pricing.decorateProducts(result.data as any[]);
+    result.data = priced.map((p) =>
+      plainToInstance(ProductResponseDto, p, { excludeExtraneousValues: true }),
+    ) as any;
+    return result as unknown as PaginatedResult<ProductResponseDto>;
   }
 }

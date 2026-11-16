@@ -7,74 +7,100 @@ import {
   IsOptional,
   IsString,
   Length,
+  MaxLength,
   Max,
   Min,
 } from 'class-validator';
-import { Type, Transform } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
+/** multipart/form-data sends arrays as "a,b" or '["a","b"]'. */
+const toArray = ({ value }: { value: unknown }) => {
+  if (typeof value !== 'string') return value;
+  try {
+    const parsed = JSON.parse(value);
+    if (Array.isArray(parsed)) return parsed;
+  } catch {
+    /* fall through */
+  }
+  return value.split(',').map((v) => v.trim()).filter(Boolean);
+};
+
+/** multipart/form-data sends booleans as strings. */
+export const toBoolean = ({ value }: { value: unknown }) =>
+  value === 'true' || value === true ? true : value === 'false' || value === false ? false : value;
+
 export class CreateProductDto {
-  @ApiProperty({ example: 'Apple iPhone 15 Pro' })
+  @ApiProperty({ example: 'Classic Beef Burger' })
   @IsNotEmpty({ message: 'Product title is required' })
   @IsString()
   @Length(3, 100, { message: 'Title must be between 3 and 100 characters' })
   title: string;
 
-  @ApiProperty({ example: 'Latest Apple iPhone with titanium design and A17 pro chip' })
-  @IsNotEmpty({ message: 'Product description is required' })
-  @IsString()
-  @Length(20, 2000, { message: 'Description must be between 20 and 2000 characters' })
-  description: string;
-
-  @ApiProperty({ example: 50 })
-  @Type(() => Number)
-  @IsNumber()
-  @Min(0)
-  quantity: number;
-
-  @ApiPropertyOptional({ example: 0 })
+  @ApiPropertyOptional({ example: 'برجر لحم كلاسيك' })
   @IsOptional()
-  @Type(() => Number)
-  @IsNumber()
-  sold?: number;
+  @IsString()
+  @MaxLength(100)
+  titleAr?: string;
 
-  @ApiProperty({ example: 1200 })
+  @ApiPropertyOptional({ example: '150g beef patty, cheddar, lettuce, tomato and house sauce' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  description?: string;
+
+  @ApiPropertyOptional({ example: 'قطعة لحم 150 جرام مع شيدر وخس وطماطم وصوص البيت' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  descriptionAr?: string;
+
+  @ApiProperty({ example: 150 })
   @Type(() => Number)
   @IsNumber()
   @Min(0)
   @Max(200000)
   price: number;
 
-  @ApiPropertyOptional({ example: 999 })
+  @ApiPropertyOptional({ example: 130, description: 'Permanent sale price (scheduled offers are managed from Promotions)' })
   @IsOptional()
   @Type(() => Number)
   @IsNumber()
   @Min(0)
   priceAfterDiscount?: number;
 
-  @ApiPropertyOptional({ example: ['Black', 'Silver'] })
+  @ApiPropertyOptional({ example: true, default: true })
   @IsOptional()
-  @Transform(({ value }) => {
-    if (typeof value === 'string') {
-      try {
-        const parsed = JSON.parse(value);
-        if (Array.isArray(parsed)) return parsed;
-      } catch {
-        return value.split(',').map((v) => v.trim());
-      }
-      return [value];
-    }
-    return value;
-  })
+  @Transform(toBoolean)
+  @IsBoolean()
+  isAvailable?: boolean;
+
+  @ApiPropertyOptional({ example: false, default: false, description: 'Enforce and decrement `quantity` on orders' })
+  @IsOptional()
+  @Transform(toBoolean)
+  @IsBoolean()
+  trackStock?: boolean;
+
+  @ApiPropertyOptional({ example: 50 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  quantity?: number;
+
+  @ApiPropertyOptional({ example: [] })
+  @IsOptional()
+  @Transform(toArray)
   @IsArray()
+  @IsString({ each: true })
   colors?: string[];
 
-  @ApiPropertyOptional({ example: 'cover.jpg' })
+  @ApiPropertyOptional({ type: 'string', format: 'binary', description: 'Cover image file' })
   @IsOptional()
   @IsString()
   imageCover?: string;
 
-  @ApiPropertyOptional({ example: ['img1.jpg', 'img2.jpg'] })
+  @ApiPropertyOptional({ type: 'array', items: { type: 'string', format: 'binary' } })
   @IsOptional()
   @IsArray()
   images?: string[];
@@ -86,19 +112,9 @@ export class CreateProductDto {
 
   @ApiPropertyOptional({ example: ['60d0fe4f5311236168a109cb'] })
   @IsOptional()
-  @Transform(({ value }) => {
-    if (typeof value === 'string') {
-      try {
-        const parsed = JSON.parse(value);
-        if (Array.isArray(parsed)) return parsed;
-      } catch {
-        return value.split(',').map((v) => v.trim());
-      }
-      return [value];
-    }
-    return value;
-  })
+  @Transform(toArray)
   @IsArray()
+  @IsMongoId({ each: true })
   subcategories?: string[];
 
   @ApiPropertyOptional({ example: '60d0fe4f5311236168a109cc' })
@@ -108,7 +124,7 @@ export class CreateProductDto {
 
   @ApiPropertyOptional({ example: false })
   @IsOptional()
-  @Type(() => Boolean)
+  @Transform(toBoolean)
   @IsBoolean()
   new?: boolean;
 }

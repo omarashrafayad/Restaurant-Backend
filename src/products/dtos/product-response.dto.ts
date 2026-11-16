@@ -12,7 +12,19 @@ export class ProductResponseDto {
   slug?: string;
 
   @Expose()
-  description: string;
+  titleAr?: string;
+
+  @Expose()
+  description?: string;
+
+  @Expose()
+  descriptionAr?: string;
+
+  @Expose()
+  isAvailable: boolean;
+
+  @Expose()
+  trackStock: boolean;
 
   @Expose()
   quantity: number;
@@ -52,6 +64,13 @@ export class ProductResponseDto {
 
   @Expose()
   new: boolean;
+
+  /** Price the customer pays right now (sale price / active promotion applied). */
+  @Expose()
+  finalPrice?: number;
+
+  @Expose()
+  activePromotion?: any;
 
   @Expose()
   createdAt?: Date;

@@ -9,13 +9,13 @@ import {
   Patch,
   Post,
   Query,
-  Req,
   UploadedFiles,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
+import { imageUploadOptions } from '../common/files/upload-options.js';
 import { ApiTags } from '@nestjs/swagger';
-import type { Request } from 'express';
+import { QueryProductsDto } from './dtos/query-products.dto.js';
 import { APi_TAGS } from '../common/swagger/constant.js';
 import { ProductsService } from './products.service.js';
 import { CreateProductDto } from './dtos/create-product.dto.js';
@@ -40,8 +40,15 @@ export class ProductsController {
   @FindAllProductsSwagger()
   @Public()
   @Get()
-  async getAllProducts(@Req() req: Request) {
-    return this.productsService.findAll(req.query);
+  async getAllProducts(@Query() query: QueryProductsDto) {
+    return this.productsService.findAll(query);
+  }
+
+  @FindAllProductsSwagger()
+  @Authorize(Roles.ADMIN, Roles.MANAGER)
+  @Get('manage')
+  async getAllProductsForStaff(@Query() query: QueryProductsDto) {
+    return this.productsService.findAll(query, true);
   }
 
   @FindProductByIdSwagger()
@@ -55,10 +62,13 @@ export class ProductsController {
   @Authorize(Roles.ADMIN, Roles.MANAGER)
   @Post()
   @UseInterceptors(
-    FileFieldsInterceptor([
-      { name: 'imageCover', maxCount: 1 },
-      { name: 'images', maxCount: 5 },
-    ]),
+    FileFieldsInterceptor(
+      [
+        { name: 'imageCover', maxCount: 1 },
+        { name: 'images', maxCount: 5 },
+      ],
+      imageUploadOptions,
+    ),
   )
   async createProduct(
     @Body() body: CreateProductDto,
@@ -93,10 +103,13 @@ export class ProductsController {
   @Authorize(Roles.ADMIN, Roles.MANAGER)
   @Patch(':id')
   @UseInterceptors(
-    FileFieldsInterceptor([
-      { name: 'imageCover', maxCount: 1 },
-      { name: 'images', maxCount: 5 },
-    ]),
+    FileFieldsInterceptor(
+      [
+        { name: 'imageCover', maxCount: 1 },
+        { name: 'images', maxCount: 5 },
+      ],
+      imageUploadOptions,
+    ),
   )
   async updateProduct(
     @Param('id') id: string,

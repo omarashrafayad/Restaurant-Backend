@@ -18,14 +18,24 @@ export class Product {
   @Prop({ lowercase: true })
   slug?: string;
 
-  @Prop({
-    required: [true, 'Product description is required'],
-    minlength: [20, 'Too short product description'],
-    maxlength: [2000, 'Too long product description'],
-  })
-  description: string;
+  @Prop({ trim: true, maxlength: [100, 'Too long product title'] })
+  titleAr?: string;
 
-  @Prop({ required: [true, 'Product quantity is required'] })
+  @Prop({ trim: true, maxlength: [2000, 'Too long product description'] })
+  description?: string;
+
+  @Prop({ trim: true, maxlength: [2000, 'Too long product description'] })
+  descriptionAr?: string;
+
+  /** Restaurant switch: hide/disable an item without deleting it ("sold out today"). */
+  @Prop({ default: true, index: true })
+  isAvailable: boolean;
+
+  /** When true, `quantity` is enforced and decremented on every order. */
+  @Prop({ default: false })
+  trackStock: boolean;
+
+  @Prop({ default: 0, min: [0, 'Quantity cannot be negative'] })
   quantity: number;
 
   @Prop({ default: 0 })
@@ -40,8 +50,8 @@ export class Product {
   @Prop({ type: [String], default: [] })
   colors: string[];
 
-  @Prop({ required: [true, 'Product Image cover is required'] })
-  imageCover: string;
+  @Prop()
+  imageCover?: string;
 
   @Prop({ type: [String], default: [] })
   images: string[];
@@ -50,6 +60,7 @@ export class Product {
     type: SchemaTypes.ObjectId,
     ref: 'Category',
     required: [true, 'Product must belong to category'],
+    index: true,
   })
   category: Types.ObjectId;
 
@@ -80,32 +91,11 @@ export class Product {
 
 export const ProductSchema = SchemaFactory.createForClass(Product);
 
+ProductSchema.index({ title: 'text', titleAr: 'text', description: 'text' });
+
 ProductSchema.pre(/^find/, function () {
   (this as any).populate({
     path: 'category',
     select: 'name image _id',
   });
-});
-
-const setImageURL = (doc: any) => {
-  const baseUrl = process.env.BASE_URL || 'http://localhost:5000';
-  if (doc && doc.imageCover && !doc.imageCover.startsWith('http')) {
-    doc.imageCover = `${baseUrl}/products/${doc.imageCover}`;
-  }
-  if (doc && doc.images && Array.isArray(doc.images)) {
-    doc.images = doc.images.map((img: string) => {
-      if (typeof img === 'string' && !img.startsWith('http')) {
-        return `${baseUrl}/products/${img}`;
-      }
-      return img;
-    });
-  }
-};
-
-ProductSchema.post('init', (doc) => {
-  setImageURL(doc);
-});
-
-ProductSchema.post('save', (doc) => {
-  setImageURL(doc);
 });

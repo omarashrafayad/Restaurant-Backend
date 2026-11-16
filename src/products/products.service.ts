@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { QueryProductsDto } from './dtos/query-products.dto.js';
 import { CreateProductUseCase } from './use-cases/create-product.usecase.js';
 import { FindAllProductsUseCase } from './use-cases/find-all-products.usecase.js';
 import { FindProductByIdUseCase } from './use-cases/find-product-by-id.usecase.js';
@@ -23,8 +24,8 @@ export class ProductsService {
     return this.createProductUseCase.execute(dto);
   }
 
-  findAll(queryParams: Record<string, any>) {
-    return this.findAllProductsUseCase.execute(queryParams);
+  findAll(query: QueryProductsDto, isStaff = false) {
+    return this.findAllProductsUseCase.execute(query, isStaff);
   }
 
   findById(id: string) {

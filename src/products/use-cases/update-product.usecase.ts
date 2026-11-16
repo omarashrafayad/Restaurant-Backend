@@ -63,21 +63,6 @@ export class UpdateProductUseCase {
       updateData.slug = slugify(dto.title, { lower: true });
     }
 
-    // Preserve existing images if not provided in update
-    if (!updateData.imageCover && (existing as any).imageCover) {
-      const oldCover = (existing as any).imageCover;
-      updateData.imageCover = typeof oldCover === 'string' ? oldCover.split('/').pop() : oldCover;
-    }
-
-    if (!updateData.images && (existing as any).images) {
-      const oldImages = (existing as any).images;
-      if (Array.isArray(oldImages)) {
-        updateData.images = oldImages.map((img: string) =>
-          typeof img === 'string' ? img.split('/').pop() : img,
-        );
-      }
-    }
-
     const updated = await this.productRepository.findByIdAndUpdate(id, updateData, {
       populate: [
         { path: 'category', select: 'name image _id' },
