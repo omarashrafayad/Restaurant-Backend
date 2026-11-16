@@ -27,6 +27,22 @@ export class PromotionResponseDto {
   daysOfWeek?: number[];
 
   @Expose()
+  startTime?: string;
+
+  @Expose()
+  endTime?: string;
+
+  @Expose()
+  banner?: string;
+
+  @Expose()
+  notifyCustomers?: boolean;
+
+  /** Whether the promotion is running right now. */
+  @Expose()
+  isRunning?: boolean;
+
+  @Expose()
   startDate?: Date;
 
   @Expose()

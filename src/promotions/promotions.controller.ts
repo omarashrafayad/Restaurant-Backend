@@ -40,25 +40,25 @@ export class PromotionsController {
   @Public()
   @Get('active')
   async getActivePromotions() {
-    return this.promotionsService.getActivePromotions();
+    return this.promotionsService.getActive();
   }
 
   @QuickApplySwagger()
   @Authorize(Roles.ADMIN, Roles.MANAGER)
   @Post('quick-apply')
   async applyQuickDiscount(@Body() body: ApplyQuickDiscountDto) {
-    return this.promotionsService.applyQuickDiscount(body);
+    return this.promotionsService.applyQuick(body);
   }
 
   @QuickRemoveSwagger()
   @Authorize(Roles.ADMIN, Roles.MANAGER)
   @Post('quick-remove')
   async removeQuickDiscount(@Body() body: RemoveQuickDiscountDto) {
-    return this.promotionsService.removeQuickDiscount(body);
+    return this.promotionsService.removeQuick(body);
   }
 
   @FindAllPromotionsSwagger()
-  @Public()
+  @Authorize(Roles.ADMIN, Roles.MANAGER)
   @Get()
   async getAllPromotions(@Query() query: PaginationDto) {
     return this.promotionsService.findAll(query);
