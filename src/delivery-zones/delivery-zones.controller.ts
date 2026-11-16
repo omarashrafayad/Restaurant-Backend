@@ -41,6 +41,7 @@ export class DeliveryZonesController {
     return this.deliveryZonesService.checkDeliveryFee(city);
   }
 
+  @ApiOperation({ summary: 'Check delivery availability and fee by area name' })
   @Public()
   @Post('check-fee')
   async checkDeliveryFeePost(@Body() body: CheckDeliveryFeeDto) {

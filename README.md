@@ -23,7 +23,7 @@ Built with NestJS 12, TypeScript (ESM) and MongoDB (Mongoose 9).
 - Scheduled offers on the whole menu, categories or specific items, by date range, day of week and time window
 - Daily and period sales reports in Cairo time (orders, sales, top items, areas, hours, rejection reasons, ratings), plus an end-of-day summary push
 
-See [docs/API-FLOWS.md](docs/API-FLOWS.md) for the endpoint flows and [docs/REALTIME.md](docs/REALTIME.md) for socket events and push setup.
+Start with [docs/CLIENT-REQUIREMENTS.md](docs/CLIENT-REQUIREMENTS.md) (each client requirement → API → test). See [docs/API-FLOWS.md](docs/API-FLOWS.md) for the endpoint flows and [docs/REALTIME.md](docs/REALTIME.md) for socket events and push setup.
 Swagger UI: `http://localhost:5000/api/docs`.
 
 ## Quick start

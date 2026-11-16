@@ -132,6 +132,7 @@ export class OrdersController {
     return this.ordersService.markPaid(id);
   }
 
+  @ApiOperation({ summary: 'Delete an order (admin); in-progress orders return their stock' })
   @Authorize(Roles.ADMIN)
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)

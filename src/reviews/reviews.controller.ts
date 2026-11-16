@@ -10,7 +10,7 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { APi_TAGS } from '../common/swagger/constant.js';
 import { ReviewsService } from './reviews.service.js';
 import { CreateReviewDto } from './dtos/create-review.dto.js';
@@ -39,6 +39,7 @@ export class ReviewsController {
   }
 
   // Nested route: GET /products/:productId/reviews
+  @ApiOperation({ summary: 'Reviews of a product' })
   @Public()
   @Get('products/:productId/reviews')
   async getProductReviews(
@@ -58,6 +59,7 @@ export class ReviewsController {
   }
 
   // Nested route: POST /products/:productId/reviews
+  @ApiOperation({ summary: 'Review a product' })
   @Post('products/:productId/reviews')
   async createProductReview(
     @Param('productId') productId: string,

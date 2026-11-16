@@ -10,7 +10,7 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { APi_TAGS } from '../common/swagger/constant.js';
 import { SubcategoriesService } from './subcategories.service.js';
 import { CreateSubCategoryDto } from './dtos/create-subcategory.dto.js';
@@ -40,6 +40,7 @@ export class SubcategoriesController {
   }
 
   // Nested route: /categories/:categoryId/subcategories
+  @ApiOperation({ summary: 'Subcategories of a category' })
   @Public()
   @Get('categories/:categoryId/subcategories')
   async getCategorySubCategories(
@@ -57,6 +58,7 @@ export class SubcategoriesController {
   }
 
   // Nested route: POST /categories/:categoryId/subcategories
+  @ApiOperation({ summary: 'Create a subcategory under a category' })
   @Authorize(Roles.ADMIN, Roles.MANAGER)
   @Post('categories/:categoryId/subcategories')
   async createCategorySubCategory(
