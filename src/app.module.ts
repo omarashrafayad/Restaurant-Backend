@@ -17,13 +17,23 @@ import { OrdersModule } from './orders/orders.module.js';
 import { DeliveryZonesModule } from './delivery-zones/delivery-zones.module.js';
 import { PromotionsModule } from './promotions/promotions.module.js';
 import { MailModule } from './mail/mail.module.js';
+import { PricingModule } from './pricing/pricing.module.js';
+import { SettingsModule } from './settings/settings.module.js';
+import { RealtimeModule } from './realtime/realtime.module.js';
+import { NotificationsModule } from './notifications/notifications.module.js';
+import { ReportsModule } from './reports/reports.module.js';
+import { HealthController } from './health/health.controller.js';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard.js';
 import { RolesGuard } from './auth/guards/roles.guard.js';
 import { TransformResponseInterceptor } from './common/interceptors/transform-response.interceptor.js';
+import { UploadUrlInterceptor } from './common/interceptors/upload-url.interceptor.js';
+import { HttpThrottlerGuard } from './common/guards/http-throttler.guard.js';
 
 @Module({
   imports: [
     CoreModule,
+    PricingModule,
+    SettingsModule,
     UsersModule,
     AuthModule,
     CategoriesModule,
@@ -40,10 +50,16 @@ import { TransformResponseInterceptor } from './common/interceptors/transform-re
     DeliveryZonesModule,
     PromotionsModule,
     MailModule,
+    RealtimeModule,
+    NotificationsModule,
+    ReportsModule,
   ],
+  controllers: [HealthController],
   providers: [
+    { provide: APP_GUARD, useClass: HttpThrottlerGuard },
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
+    { provide: APP_INTERCEPTOR, useClass: UploadUrlInterceptor },
     { provide: APP_INTERCEPTOR, useClass: TransformResponseInterceptor },
   ],
 })

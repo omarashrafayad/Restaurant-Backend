@@ -1,0 +1,34 @@
+# Local development stack: API + MongoDB (single-node replica set, required for transactions).
+#   docker compose up -d --build
+#   docker compose exec api npm run seed
+services:
+  mongo:
+    image: mongo:7
+    command: ["--replSet", "rs0", "--bind_ip_all"]
+    ulimits:
+      nofile: { soft: 64000, hard: 64000 }
+    ports: ["27017:27017"]
+    volumes: [mongo-data:/data/db]
+    healthcheck:
+      # Initiates the replica set on first start, then reports healthy.
+      test: ["CMD", "mongosh", "--quiet", "--eval", "try { rs.status().ok } catch (e) { rs.initiate({_id:'rs0',members:[{_id:0,host:'mongo:27017'}]}).ok }"]
+      interval: 5s
+      timeout: 10s
+      retries: 20
+
+  api:
+    build: .
+    env_file: .env
+    environment:
+      MONGO_URI: mongodb://mongo:27017/takefive?replicaSet=rs0
+      NODE_ENV: production
+    ports: ["5000:5000"]
+    volumes: [uploads:/app/uploads]
+    depends_on:
+      mongo:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  mongo-data:
+  uploads:
