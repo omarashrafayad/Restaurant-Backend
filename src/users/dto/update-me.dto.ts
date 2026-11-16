@@ -1,5 +1,7 @@
-import { IsEmail, IsOptional, IsString, MinLength } from 'class-validator';
+import { IsEmail, IsOptional, IsString, Matches, MinLength } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
+import { EG_MOBILE_REGEX, normalizeEgMobile } from '../../common/utils/phone.util.js';
 
 export class UpdateMeDto {
   @ApiPropertyOptional({ example: 'Omar Mahmoud' })
@@ -15,7 +17,8 @@ export class UpdateMeDto {
 
   @ApiPropertyOptional({ example: '+201234567890' })
   @IsOptional()
-  @IsString()
+  @Matches(EG_MOBILE_REGEX, { message: 'Please enter a valid Egyptian mobile number' })
+  @Transform(({ value }) => (typeof value === 'string' ? normalizeEgMobile(value) : value), { toClassOnly: true })
   phone?: string;
 
   @ApiPropertyOptional({ example: 'user.png' })

@@ -7,6 +7,7 @@ import { UserResponseDto } from '../../users/dto/user-response.dto.js';
 import { UnAuthorizedException } from '../../common/error-handling/custom-excepction/un-authorized.exception.js';
 import bcrypt from 'bcryptjs';
 import { plainToInstance } from 'class-transformer';
+import { signAccessToken } from '../utils/token.util.js';
 
 @Injectable()
 export class LoginUseCase {
@@ -33,12 +34,7 @@ export class LoginUseCase {
       throw new UnAuthorizedException('This account has been deactivated');
     }
 
-    const userId = user._id.toString();
-    const token = this.jwtService.sign({
-      userId,
-      _id: userId,
-      role: user.role,
-    });
+    const token = signAccessToken(this.jwtService, user);
 
     const userObj = user.toObject();
     const userResponse = plainToInstance(UserResponseDto, userObj, {

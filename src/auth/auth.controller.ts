@@ -1,5 +1,6 @@
 import { Body, Controller, Patch, Post } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { APi_TAGS } from '../common/swagger/constant.js';
 import { AuthService } from './auth.service.js';
 import { SignupDto } from './dtos/signup.dto.js';
@@ -23,6 +24,7 @@ export class AuthController {
 
   @SignupSwagger()
   @Public()
+  @Throttle({ default: { limit: 10, ttl: 15 * 60 * 1000 } })
   @Post('signup')
   async signup(@Body() body: SignupDto) {
     return this.authService.signup(body);
@@ -30,6 +32,7 @@ export class AuthController {
 
   @LoginSwagger()
   @Public()
+  @Throttle({ default: { limit: 10, ttl: 15 * 60 * 1000 } })
   @Post('login')
   async login(@Body() body: LoginDto) {
     return this.authService.login(body);
@@ -37,6 +40,7 @@ export class AuthController {
 
   @ForgotPasswordSwagger()
   @Public()
+  @Throttle({ default: { limit: 10, ttl: 15 * 60 * 1000 } })
   @Post('forgotPassword')
   async forgotPassword(@Body() body: ForgotPasswordDto) {
     return this.authService.forgotPassword(body);
@@ -44,6 +48,7 @@ export class AuthController {
 
   @VerifyResetCodeSwagger()
   @Public()
+  @Throttle({ default: { limit: 10, ttl: 15 * 60 * 1000 } })
   @Post('verifyResetCode')
   async verifyResetCode(@Body() body: VerifyResetCodeDto) {
     return this.authService.verifyResetCode(body);
@@ -51,6 +56,7 @@ export class AuthController {
 
   @ResetPasswordSwagger()
   @Public()
+  @Throttle({ default: { limit: 10, ttl: 15 * 60 * 1000 } })
   @Patch('resetPassword')
   async resetPassword(@Body() body: ResetPasswordDto) {
     return this.authService.resetPassword(body);

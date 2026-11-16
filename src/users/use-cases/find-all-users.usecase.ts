@@ -4,6 +4,7 @@ import { UserResponseDto } from '../dto/user-response.dto.js';
 import { PaginationDto } from '../../common/data-accsess/dto/pagination.dto.js';
 import { PaginatedResult } from '../../common/data-accsess/base-repository.js';
 import { plainToInstance } from 'class-transformer';
+import { containsRegex } from '../../common/utils/regex.util.js';
 
 @Injectable()
 export class FindAllUsersUseCase {
@@ -14,8 +15,9 @@ export class FindAllUsersUseCase {
 
     if (query.keyword) {
       filterQuery.$or = [
-        { name: { $regex: query.keyword, $options: 'i' } },
-        { email: { $regex: query.keyword, $options: 'i' } },
+        { name: containsRegex(query.keyword) },
+        { email: containsRegex(query.keyword) },
+        { phone: containsRegex(query.keyword) },
       ];
     }
 
@@ -24,10 +26,13 @@ export class FindAllUsersUseCase {
       limit: query.limit,
       ignoreLimit: query.ignoreLimit,
       sort: query.sort,
-      fields: query.fields,
       lean: true,
     });
 
-    return plainToInstance(PaginatedResult<UserResponseDto>, result);
+    // Map every row through the response DTO so internal fields never leak.
+    result.data = result.data.map((u) =>
+      plainToInstance(UserResponseDto, u, { excludeExtraneousValues: true }),
+    ) as any;
+    return result as unknown as PaginatedResult<UserResponseDto>;
   }
 }

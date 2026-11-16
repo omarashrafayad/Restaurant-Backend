@@ -35,6 +35,8 @@ export class JwtAuthGuard implements CanActivate {
     ]);
 
     if (isPublic) return true;
+    // Websocket connections are authenticated by the gateway itself.
+    if (context.getType() !== 'http') return true;
 
     const request = context.switchToHttp().getRequest<RequestWithUser>();
     const authHeader = request.headers.authorization;

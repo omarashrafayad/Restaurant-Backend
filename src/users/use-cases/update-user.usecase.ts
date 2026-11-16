@@ -1,3 +1,5 @@
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { SESSIONS_REVOKED } from '../../auth/auth.events.js';
 import { Injectable } from '@nestjs/common';
 import { UserRepository } from '../repository/user.repository.js';
 import { UpdateUserDto } from '../dto/update-user.dto.js';
@@ -8,7 +10,10 @@ import { plainToInstance } from 'class-transformer';
 
 @Injectable()
 export class UpdateUserUseCase {
-  constructor(private readonly userRepository: UserRepository) {}
+  constructor(
+    private readonly userRepository: UserRepository,
+    private readonly events: EventEmitter2,
+  ) {}
 
   async execute(id: string, dto: UpdateUserDto): Promise<UserResponseDto> {
     if (dto.email) {
@@ -25,6 +30,7 @@ export class UpdateUserUseCase {
     if (!updatedUser) {
       throw new NotFoundException(`No user found for id: ${id}`);
     }
+    this.events.emit(SESSIONS_REVOKED, { userId: id });
 
     const userObj = (updatedUser as any).toObject ? (updatedUser as any).toObject() : updatedUser;
     return plainToInstance(UserResponseDto, userObj, { excludeExtraneousValues: true });

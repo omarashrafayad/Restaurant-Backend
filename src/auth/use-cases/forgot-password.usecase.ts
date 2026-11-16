@@ -1,9 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
+import crypto from 'crypto';
 import { UserRepository } from '../../users/repository/user.repository.js';
 import { MailService } from '../../mail/mail.service.js';
 import { ForgotPasswordDto } from '../dtos/forgot-password.dto.js';
-import { NotFoundException } from '../../common/error-handling/custom-excepction/not-found.exception.js';
-import crypto from 'crypto';
+import { RESET_CODE_TTL_MINUTES } from '../../common/constants/auth.constant.js';
+
+export const hashResetCode = (code: string) =>
+  crypto.createHash('sha256').update(code).digest('hex');
 
 @Injectable()
 export class ForgotPasswordUseCase {
@@ -15,37 +18,42 @@ export class ForgotPasswordUseCase {
   ) {}
 
   async execute(dto: ForgotPasswordDto): Promise<{ status: string; message: string }> {
-    const user = await this.userRepository.findOne({ email: dto.email.toLowerCase() });
-    if (!user) {
-      throw new NotFoundException(`There is no user with that email ${dto.email}`);
-    }
+    // Same response whether the email exists or not (prevents account enumeration).
+    const response = {
+      status: 'success',
+      message: 'If an account exists for this email, a reset code has been sent',
+    };
 
-    const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
-    const hashedResetCode = crypto.createHash('sha256').update(resetCode).digest('hex');
+    const user = await this.userRepository.findOne({ email: dto.email.toLowerCase().trim() });
+    if (!user || !user.active) return response;
+
+    const resetCode = crypto.randomInt(100000, 1000000).toString();
 
     await this.userRepository.findByIdAndUpdate(user._id.toString(), {
-      passwordResetCode: hashedResetCode,
-      passwordResetExpires: new Date(Date.now() + 10 * 60 * 1000),
+      passwordResetCode: hashResetCode(resetCode),
+      passwordResetExpires: new Date(Date.now() + RESET_CODE_TTL_MINUTES * 60 * 1000),
       passwordResetVerified: false,
+      passwordResetAttempts: 0,
     });
 
-    const message = `Hi ${user.name},\nWe received a request to reset the password on your E-shop Account.\n${resetCode}\nEnter this code to complete the reset.\nThanks for helping us keep your account secure.\nThe E-shop Team`;
-
-    try {
-      await this.mailService.sendEmail({
+    // Fire-and-forget so response time does not reveal whether the account exists.
+    this.mailService
+      .sendEmail({
         email: user.email,
-        subject: 'Your password reset code (valid for 10 min)',
-        message,
+        subject: `Your Take Five password reset code (valid for ${RESET_CODE_TTL_MINUTES} min)`,
+        message:
+          `Hi ${user.name},\n\n` +
+          `We received a request to reset the password of your Take Five account.\n\n` +
+          `Your code: ${resetCode}\n\n` +
+          `If you did not request this, you can safely ignore this email.\n\nTake Five Team`,
+      })
+      .catch((err: Error) => {
+        this.logger.error(`Failed to send password reset email: ${err.message}`);
+        if (process.env.NODE_ENV === 'development') {
+          this.logger.warn(`DEV ONLY - reset code for ${user.email}: ${resetCode}`);
+        }
       });
-    } catch (err: any) {
-      this.logger.error(`Failed to send password reset email: ${err.message}`);
-      // In local dev without SMTP creds, log the code for debugging
-      this.logger.warn(`DEVELOPMENT RESET CODE FOR ${user.email}: ${resetCode}`);
-    }
 
-    return {
-      status: 'Success',
-      message: 'Reset code sent to email',
-    };
+    return response;
   }
 }

@@ -17,6 +17,8 @@ export class RolesGuard implements CanActivate {
     ]);
 
     if (isPublic) return true;
+    // Websocket connections are authenticated by the gateway itself.
+    if (context.getType() !== 'http') return true;
 
     const roles = this.reflector.getAllAndOverride<(Roles | string)[]>(ROLES_KEY, [
       context.getHandler(),

@@ -2,7 +2,7 @@ import { applyDecorators } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiBody, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { CreateUserDto } from '../dto/create-user.dto.js';
 import { UpdateUserDto } from '../dto/update-user.dto.js';
-import { ChangePasswordDto } from '../dto/change-password.dto.js';
+import { ChangeMyPasswordDto, ChangePasswordDto } from '../dto/change-password.dto.js';
 import { UpdateMeDto } from '../dto/update-me.dto.js';
 import { UserResponseDto } from '../dto/user-response.dto.js';
 
@@ -80,7 +80,7 @@ export function UpdateMeSwagger() {
 export function ChangeMyPasswordSwagger() {
   return applyDecorators(
     ApiOperation({ summary: 'Change password for logged in user' }),
-    ApiBody({ type: ChangePasswordDto }),
+    ApiBody({ type: ChangeMyPasswordDto }),
     ApiResponse({ status: 200, description: 'Password changed successfully' }),
   );
 }

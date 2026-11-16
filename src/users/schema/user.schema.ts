@@ -1,6 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, SchemaTypes, Types } from 'mongoose';
 import bcrypt from 'bcryptjs';
+import { BCRYPT_ROUNDS } from '../../common/constants/auth.constant.js';
 
 export type UserDocument = HydratedDocument<User>;
 
@@ -8,22 +9,39 @@ export type UserDocument = HydratedDocument<User>;
 export class Address {
   _id?: Types.ObjectId;
 
-  @Prop()
+  @Prop({ trim: true })
   alias?: string;
 
-  @Prop({ required: true })
+  /** Delivery zone (city/area) - drives the delivery fee and minimum order. */
+  @Prop({ type: SchemaTypes.ObjectId, ref: 'DeliveryZone' })
+  zone?: Types.ObjectId;
+
+  /** Zone name snapshot (kept for display and legacy addresses). */
+  @Prop({ trim: true })
+  city?: string;
+
+  @Prop({ required: true, trim: true })
   details: string;
 
-  @Prop({ required: true })
-  phone: string;
+  @Prop({ trim: true })
+  building?: string;
 
-  @Prop({ required: true })
-  city: string;
+  @Prop({ trim: true })
+  floor?: string;
+
+  @Prop({ trim: true })
+  apartment?: string;
+
+  @Prop({ trim: true })
+  landmark?: string;
+
+  @Prop({ trim: true })
+  phone?: string;
 
   @Prop()
   postalCode?: string;
 
-  @Prop({ type: { lat: Number, lng: Number } })
+  @Prop({ type: { lat: Number, lng: Number }, _id: false })
   coordinates?: {
     lat: number;
     lng: number;
@@ -31,6 +49,9 @@ export class Address {
 
   @Prop()
   locationUrl?: string;
+
+  @Prop({ default: false })
+  isDefault?: boolean;
 }
 
 export const AddressSchema = SchemaFactory.createForClass(Address);
@@ -59,20 +80,23 @@ export class User {
   @Prop()
   profileImg?: string;
 
-  @Prop({ required: [true, 'password required'], minlength: [6, 'Too short password'] })
+  @Prop({ required: [true, 'password required'], minlength: [6, 'Too short password'], select: false })
   password?: string;
 
   @Prop()
   passwordChangedAt?: Date;
 
-  @Prop()
+  @Prop({ select: false })
   passwordResetCode?: string;
 
-  @Prop()
+  @Prop({ select: false })
   passwordResetExpires?: Date;
 
-  @Prop()
+  @Prop({ select: false })
   passwordResetVerified?: boolean;
+
+  @Prop({ select: false, default: 0 })
+  passwordResetAttempts?: number;
 
   @Prop({
     type: String,
@@ -83,6 +107,10 @@ export class User {
 
   @Prop({ default: true })
   active: boolean;
+
+  /** Broadcast notifications created before this instant count as read. */
+  @Prop()
+  notificationsSeenAt?: Date;
 
   @Prop({
     type: [{ type: SchemaTypes.ObjectId, ref: 'Product' }],
@@ -104,20 +132,5 @@ export const UserSchema = SchemaFactory.createForClass(User);
 
 UserSchema.pre('save', async function () {
   if (!this.isModified('password') || !this.password) return;
-  this.password = await bcrypt.hash(this.password, 12);
-});
-
-const setImageURL = (doc: any) => {
-  if (doc && doc.profileImg && !doc.profileImg.startsWith('http')) {
-    const baseUrl = process.env.BASE_URL || 'http://localhost:5000';
-    doc.profileImg = `${baseUrl}/user/${doc.profileImg}`;
-  }
-};
-
-UserSchema.post('init', (doc) => {
-  setImageURL(doc);
-});
-
-UserSchema.post('save', (doc) => {
-  setImageURL(doc);
+  this.password = await bcrypt.hash(this.password, BCRYPT_ROUNDS);
 });

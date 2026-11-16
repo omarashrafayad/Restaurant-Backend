@@ -1,9 +1,7 @@
 import { Module } from '@nestjs/common';
-import { JwtModule } from '@nestjs/jwt';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { Environment } from '../common/configuration/environment.interface.js';
 import { UsersModule } from '../users/users.module.js';
 import { MailModule } from '../mail/mail.module.js';
+import { AddressesModule } from '../addresses/addresses.module.js';
 import { AuthController } from './auth.controller.js';
 import { AuthService } from './auth.service.js';
 import { SignupUseCase } from './use-cases/signup.usecase.js';
@@ -18,16 +16,7 @@ import { RolesGuard } from './guards/roles.guard.js';
   imports: [
     UsersModule,
     MailModule,
-    JwtModule.registerAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: (configService: ConfigService<Environment>) => ({
-        secret: configService.get<string>('jwtSecret') || 'secretKey',
-        signOptions: {
-          expiresIn: (configService.get<string>('accessTokenExpireIn') || '7d') as any,
-        },
-      }),
-    }),
+    AddressesModule,
   ],
   controllers: [AuthController],
   providers: [
@@ -40,6 +29,6 @@ import { RolesGuard } from './guards/roles.guard.js';
     JwtAuthGuard,
     RolesGuard,
   ],
-  exports: [AuthService, JwtAuthGuard, RolesGuard, JwtModule],
+  exports: [AuthService, JwtAuthGuard, RolesGuard],
 })
 export class AuthModule {}

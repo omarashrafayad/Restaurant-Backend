@@ -13,12 +13,13 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { imageUploadOptions } from '../common/files/upload-options.js';
 import { ApiTags } from '@nestjs/swagger';
 import { APi_TAGS } from '../common/swagger/constant.js';
 import { UsersService } from './users.service.js';
 import { CreateUserDto } from './dto/create-user.dto.js';
 import { UpdateUserDto } from './dto/update-user.dto.js';
-import { ChangePasswordDto } from './dto/change-password.dto.js';
+import { ChangeMyPasswordDto, ChangePasswordDto } from './dto/change-password.dto.js';
 import { UpdateMeDto } from './dto/update-me.dto.js';
 import { PaginationDto } from '../common/data-accsess/dto/pagination.dto.js';
 import { CurrentAccount, Principal } from '../auth/decorator/current-account.decorator.js';
@@ -51,7 +52,7 @@ export class UsersController {
 
   @UpdateMeSwagger()
   @Patch('updateMe')
-  @UseInterceptors(FileInterceptor('profileImg'))
+  @UseInterceptors(FileInterceptor('profileImg', imageUploadOptions))
   async updateMe(
     @CurrentAccount() principal: Principal,
     @Body() body: UpdateMeDto,
@@ -67,9 +68,9 @@ export class UsersController {
   @Patch('changeMyPassword')
   async changeMyPassword(
     @CurrentAccount() principal: Principal,
-    @Body() body: ChangePasswordDto,
+    @Body() body: ChangeMyPasswordDto,
   ) {
-    return this.usersService.changePassword(principal.user._id, body);
+    return this.usersService.changeMyPassword(principal.user._id, body);
   }
 
   @DeleteMeSwagger()
@@ -79,15 +80,19 @@ export class UsersController {
     return this.usersService.deleteMe(principal.user._id);
   }
 
+  // ---------- Admin user management ----------
+
   @FindAllUsersSwagger()
+  @Authorize(Roles.ADMIN, Roles.MANAGER)
   @Get()
   async getAllUsers(@Query() query: PaginationDto) {
     return this.usersService.findAll(query);
   }
 
   @CreateUserSwagger()
+  @Authorize(Roles.ADMIN)
   @Post()
-  @UseInterceptors(FileInterceptor('profileImg'))
+  @UseInterceptors(FileInterceptor('profileImg', imageUploadOptions))
   async createUser(
     @Body() body: CreateUserDto,
     @UploadedFile() file?: Express.Multer.File,
@@ -99,14 +104,16 @@ export class UsersController {
   }
 
   @FindUserByIdSwagger()
+  @Authorize(Roles.ADMIN, Roles.MANAGER)
   @Get(':id')
   async getUserById(@Param('id') id: string) {
     return this.usersService.findById(id);
   }
 
   @UpdateUserSwagger()
+  @Authorize(Roles.ADMIN)
   @Patch(':id')
-  @UseInterceptors(FileInterceptor('profileImg'))
+  @UseInterceptors(FileInterceptor('profileImg', imageUploadOptions))
   async updateUser(
     @Param('id') id: string,
     @Body() body: UpdateUserDto,
@@ -127,6 +134,7 @@ export class UsersController {
   }
 
   @ChangePasswordSwagger()
+  @Authorize(Roles.ADMIN)
   @Patch('changePassword/:id')
   async changeUserPassword(
     @Param('id') id: string,

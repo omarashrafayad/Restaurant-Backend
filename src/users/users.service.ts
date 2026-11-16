@@ -9,7 +9,7 @@ import { UpdateMeUseCase } from './use-cases/update-me.usecase.js';
 import { DeleteMeUseCase } from './use-cases/delete-me.usecase.js';
 import { CreateUserDto } from './dto/create-user.dto.js';
 import { UpdateUserDto } from './dto/update-user.dto.js';
-import { ChangePasswordDto } from './dto/change-password.dto.js';
+import { ChangeMyPasswordDto, ChangePasswordDto } from './dto/change-password.dto.js';
 import { UpdateMeDto } from './dto/update-me.dto.js';
 import { PaginationDto } from '../common/data-accsess/dto/pagination.dto.js';
 import { UserRepository } from './repository/user.repository.js';
@@ -51,6 +51,10 @@ export class UsersService {
 
   changePassword(id: string, dto: ChangePasswordDto) {
     return this.changePasswordUseCase.execute(id, dto);
+  }
+
+  changeMyPassword(userId: string, dto: ChangeMyPasswordDto) {
+    return this.changePasswordUseCase.changeMine(userId, dto);
   }
 
   updateMe(userId: string, dto: UpdateMeDto) {
