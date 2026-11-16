@@ -1,212 +1,96 @@
-# Restaurant & E-Commerce Backend (NestJS)
+# Take Five Backend
 
-A complete, production-ready, enterprise-grade E-Commerce & Restaurant backend built with **NestJS**, **TypeScript**, and **MongoDB (Mongoose)**, architected 1:1 following the clean use-case and repository pattern from the reference architecture (`backend/nestjsairbnb`).
+Backend for the **Take Five** restaurant: the customer ordering app and the restaurant dashboard.
+Built with NestJS 12, TypeScript (ESM) and MongoDB (Mongoose 9).
 
----
+## What it does
 
-## 🌟 Key Features & Domain Modules
+**Customers**
+- Account with phone number and saved addresses (delivery area, building/floor/apartment, landmark, GPS location / maps link)
+- Menu with live prices, so scheduled offers show up automatically
+- Cart with per-item kitchen notes ("no onions") and coupons
+- Checkout preview: delivery fee per area, minimum order, open/closed status
+- Cash-on-delivery orders with a short order number (#1001…)
+- Live tracking and a countdown once the restaurant accepts; restaurant phone/WhatsApp included in every order
+- Cancel while the order is still pending, rate it (stars + comment) after delivery, reorder
+- Push notifications plus an in-app inbox for order updates and offers
 
-The backend implements all **52 endpoints** across **15 domain modules** from the original e-commerce system with zero omissions:
+**Restaurant**
+- New orders arrive instantly with the customer's details and an alarm (Socket.IO + high-priority push)
+- Accept with an ETA, or reject with a reason (ready-made reasons included); strict status workflow with a full timeline
+- Delivery limited to configured areas, each with its own fee, minimum order and ETA
+- Opening hours (including after-midnight closing) plus a one-tap "pause orders" switch
+- Scheduled offers on the whole menu, categories or specific items, by date range, day of week and time window
+- Daily and period sales reports in Cairo time (orders, sales, top items, areas, hours, rejection reasons, ratings), plus an end-of-day summary push
 
-1. **Authentication & Authorization (`/api/v1/auth`)**
-   - User registration (signup) with password hashing (bcryptjs)
-   - User login with JWT token issuance
-   - Forgot password & 6-digit verification code generation (crypto-hashed, 10-minute expiry)
-   - Email dispatch via SMTP / Nodemailer
-   - Reset code verification & secure password reset
-   - Role-Based Access Control (RBAC): `USER`, `ADMIN`, `MANAGER`
-   - Global `JwtAuthGuard` & `RolesGuard` with `@Public()` and `@Authorize()` decorators
+See [docs/API-FLOWS.md](docs/API-FLOWS.md) for the endpoint flows and [docs/REALTIME.md](docs/REALTIME.md) for socket events and push setup.
+Swagger UI: `http://localhost:5000/api/docs`.
 
-2. **User Management (`/api/v1/user`)**
-   - Admin CRUD for user accounts
-   - Admin password override
-   - Customer profile (`getMe`, `updateMe`, `changeMyPassword`, `deleteMe` soft deactivation)
-   - Profile avatar image uploads with Sharp resizing and formatting
+## Quick start
 
-3. **Categories (`/api/v1/categories`)**
-   - Category CRUD with automated slug generation
-   - Single image upload & Sharp processing
-   - Pagination, search, and sorting
+Requirements: Node.js ≥ 20.11 and MongoDB **with a replica set**. Atlas works out of the box; for local development use the docker compose file. Transactions are used for checkout.
 
-4. **Subcategories (`/api/v1/subcategories`)**
-   - Subcategory CRUD with category association
-   - Nested subcategory listing under category: `GET /api/v1/categories/:categoryId/subcategories`
-   - Nested subcategory creation under category: `POST /api/v1/categories/:categoryId/subcategories`
-
-5. **Brands (`/api/v1/brands`)**
-   - Brand CRUD with slug generation
-   - Brand logo image upload with Sharp optimization
-   - Pagination, search, and sorting
-
-6. **Products Catalog (`/api/v1/products`)**
-   - Product catalog management with Category, Subcategory, and Brand relationships
-   - Image cover and multi-image gallery uploads
-   - Advanced search (name, description regex)
-   - Dynamic MongoDB operators: `$gte`, `$gt`, `$lte`, `$lt` price/rating filtering
-   - Sorting, field selection, and pagination
-   - Stock management and sold counter tracking
-
-7. **Homepage (`/api/v1/home`)**
-   - Aggregated homepage endpoint returning active banners/promotions, featured categories, popular brands, and new arrival products in a single performant payload
-
-8. **Reviews & Ratings (`/api/v1/review`)**
-   - Product reviews and ratings (1 to 5 scale)
-   - Nested routes: `GET /api/v1/products/:productId/reviews` and `POST /api/v1/products/:productId/reviews`
-   - Mongoose aggregation pipeline computing `ratingsAverage` and `ratingsQuantity` on the product upon review creation, update, or deletion
-   - Authorization: Users can only modify/delete their own reviews; Admins/Managers can moderate
-
-9. **Wishlist (`/api/v1/wishlist`)**
-   - Add product to wishlist (`$addToSet`)
-   - Remove product from wishlist (`$pull`)
-   - View logged-in user wishlist with populated product details
-
-10. **Delivery Addresses (`/api/v1/addresses`)**
-    - Multi-address customer notebook (alias, details, phone, postal code)
-    - Add, remove, and list addresses
-
-11. **Coupons & Discounts (`/api/v1/coupon`)**
-    - Coupon creation, listing, update, and expiration checks
-    - Percentage discounts and validity date constraints
-
-12. **Shopping Cart (`/api/v1/cart`)**
-    - Add items with color, price, quantity
-    - Update item quantities and remove items
-    - Coupon application with price recalculation (`totalPriceAfterDiscount`)
-    - Empty/clear cart
-
-13. **Delivery Zones (`/api/v1/delivery-zones`)**
-    - Zone name, delivery fee, minimum order amount, estimated delivery minutes, active toggle
-    - Zone fee validation endpoint: `POST /api/v1/delivery-zones/validate`
-
-14. **Orders & Checkout (`/api/v1/order`)**
-    - Cash-on-delivery and Card checkout: validates cart, delivery zone, minimum order amounts
-    - Atomic product stock decrement and sold count increment
-    - Dynamic status workflow: `pending` -> `accepted` -> `preparing` -> `on_the_way` -> `delivered` / `rejected`
-    - Virtual countdown and remaining cancellation window
-    - Order cancellation with stock restoration
-    - Daily sales and sales summary business analytics
-
-15. **Promotions & Banners (`/api/v1/promotions`)**
-    - Promotional campaign banners with start/end dates and discount percentages
-    - Quick apply/remove promotion to specific products
-    - Public active deals endpoint
-
----
-
-## 🏗️ Architecture & Blueprint
-
-The project strictly follows the architecture of `nestJs-airbnb`:
-
-```
-restaurant-backend/
-├── src/
-│   ├── common/
-│   │   ├── configuration/          # Joi-validated environment config and typed interfaces
-│   │   ├── constants/              # System constants and Roles enum
-│   │   ├── data-accsess/           # BaseRepository<T>, ModelNames, PaginationDto
-│   │   ├── error-handling/         # Custom exceptions and global CustomExceptionFilter
-│   │   ├── interceptors/           # LoggerInterceptor, TransformResponseInterceptor
-│   │   ├── swagger/                # Swagger setup, APi_TAGS, constants
-│   │   └── files/                  # Multer configs and Sharp image processing utilities
-│   ├── mail/                       # Nodemailer SMTP email service
-│   ├── auth/                       # JWT authentication, guards, RBAC, use cases
-│   ├── users/                      # User schemas, repository, use cases, controller
-│   ├── categories/                 # Category schemas, repository, use cases, controller
-│   ├── subcategories/              # Subcategory schemas, repository, use cases, controller
-│   ├── brands/                     # Brand schemas, repository, use cases, controller
-│   ├── products/                   # Product catalog, repository, use cases, controller
-│   ├── home/                       # Home aggregated service & controller
-│   ├── reviews/                    # Review schemas, repository, aggregation, controller
-│   ├── wishlist/                   # User wishlist service & controller
-│   ├── addresses/                  # User address notebook service & controller
-│   ├── coupons/                    # Coupon management, repository, controller
-│   ├── cart/                       # Cart calculations, coupon discounts, controller
-│   ├── delivery-zones/             # Delivery zone validation, repository, controller
-│   ├── orders/                     # Order lifecycle, stock transactions, analytics
-│   ├── promotions/                 # Campaign promotions & banners, controller
-│   ├── core.module.ts              # Core infrastructure module (Config, Mongoose, Global Filters)
-│   ├── app.module.ts               # Root application module wiring all 15 domains & global guards
-│   └── main.ts                     # Bootstrap entry point with CORS, validation, and Swagger
-├── uploads/                        # Static uploads storage (/user, /categories, /brands, /products)
-├── .env.example                    # Template environment variables
-├── nest-cli.json                   # Nest CLI configuration
-├── package.json                    # ESM package configuration ("type": "module")
-├── tsconfig.json                   # NodeNext ESM TypeScript configuration
-└── README.md
-```
-
-### Architectural Patterns
-
-- **ESM Native**: `"type": "module"` with NodeNext resolution and explicit `.js` import specifiers.
-- **BaseRepository Pattern**: All database interactions are encapsulated behind `BaseRepository<T>`, providing unified pagination, lean queries, populates, and custom projections.
-- **Use-Case Segregation**: Complex actions (e.g., Create, Update, Delete, FindById, FindAll) are separated into individual single-responsibility use cases.
-- **Dedicated Swagger Decorators**: Every single controller action has an isolated composite Swagger decorator in a `swagger/` subfolder documenting response types, parameters, tags, and status codes.
-- **Global Interceptors & Filters**: Standardized JSON responses via `TransformResponseInterceptor` (`{ data, pagination }`) and unified error envelopes via `CustomExceptionFilter` (`{ errors: [...] }`).
-- **Global Security**: `JwtAuthGuard` and `RolesGuard` applied globally across all routes; unauthenticated access is granted via `@Public()`, and role restrictions are declared via `@Authorize(Roles.ADMIN, Roles.MANAGER)`.
-
----
-
-## 🚀 Getting Started
-
-### 1. Prerequisites
-- **Node.js**: `v20.x` or `v22.x`+
-- **MongoDB**: Local MongoDB instance or MongoDB Atlas cluster
-
-### 2. Installation
 ```bash
-cd restaurant-backend
-npm install
-```
-
-### 3. Environment Configuration
-Copy `.env.example` to `.env` and fill in your values:
-```bash
-cp .env.example .env
-```
-
-Ensure the following variables are set:
-```ini
-PORT=5000
-NODE_ENV=development
-BASE_URL=http://localhost:5000
-MONGO_URI=mongodb+srv://<user>:<password>@cluster0.mongodb.net/ecommerce?retryWrites=true&w=majority
-JWT_SECRET=your_jwt_secret_key_here
-JWT_EXPIRES_IN=7d
-EMAIL_HOST=smtp.gmail.com
-EMAIL_PORT=465
-EMAIL_USER=your_email@gmail.com
-EMAIL_PASSWORD=your_app_password
-```
-
-### 4. Build & Run
-
-**Build the TypeScript project:**
-```bash
+cp .env.example .env          # fill in MONGO_URI and JWT_SECRET at minimum
+npm ci                        # on machines with a system libvips: SHARP_IGNORE_GLOBAL_LIBVIPS=1 npm ci
 npm run build
-```
-
-**Run in Development Mode (with hot-reload):**
-```bash
+ADMIN_EMAIL=owner@example.com ADMIN_PASSWORD='a-strong-password' npm run seed
 npm run start:dev
 ```
 
-**Run in Production Mode:**
+`npm run seed` creates the admin account, the default restaurant settings and two starter areas (Madinaty, El Shorouk). The areas are created **inactive with a 0 fee**: set the real fees from the dashboard before activating them.
+
+### With Docker
+
 ```bash
-npm run start:prod
+cp .env.example .env
+docker compose up -d --build
+docker compose exec -e ADMIN_EMAIL=owner@example.com -e ADMIN_PASSWORD='a-strong-password' api npm run seed
 ```
 
----
+## Configuration
 
-## 📚 API Documentation (Swagger)
+Every variable is documented in [.env.example](.env.example). The important ones:
 
-Once the application is running, the interactive Swagger UI documentation is available at:
-- **`http://localhost:5000/api/docs`**
-- **`http://localhost:5000/api-docs`**
+| Variable | Notes |
+|---|---|
+| `MONGO_URI` | `DATABASE` is accepted as an alias |
+| `JWT_SECRET` | **Required**, at least 32 random characters. The app refuses to start otherwise |
+| `BASE_URL` | Public API URL, used to build image URLs |
+| `CORS_ORIGINS` | Comma-separated allowed origins (set this in production) |
+| `EMAIL_USER` / `EMAIL_PASSWORD` | Gmail address + App Password, for password reset codes |
+| `FIREBASE_*` | Enables push notifications (optional, the API works without it) |
+| `RESTAURANT_TIMEZONE` | Defaults to `Africa/Cairo` (used for opening hours, offers and reports) |
 
-The Swagger UI provides interactive request execution, schema specifications, authentication headers, and parameter documentation for all 52 endpoints.
+## Tests
 
----
+End-to-end tests boot the real app against a throw-away database on a local replica set:
 
-## 🛡️ License
+```bash
+docker run -d --name takefive_mongo --ulimit nofile=64000:64000 -p 27027:27017 mongo:7 --replSet rs0 --bind_ip_all
+docker exec takefive_mongo mongosh --quiet --eval 'rs.initiate({_id:"rs0",members:[{_id:0,host:"localhost:27017"}]})'
+npm run test:e2e
+```
 
-UNLICENSED
+Set `TEST_MONGO_URL` to use another server. CI runs the same suite on every push (`.github/workflows/ci.yml`).
+
+## Project layout
+
+```
+src/
+  auth/            signup, login, password reset, JWT + role guards
+  users/ addresses/  profiles and delivery addresses (linked to delivery zones)
+  categories/ subcategories/ brands/ products/   menu
+  pricing/         single source of truth for prices (sale price + running offers)
+  cart/            cart with per-item notes and coupons
+  orders/          checkout (transactional), status machine, tracking, reviews, reorder
+  delivery-zones/  areas, fees, minimum order, ETA
+  promotions/      scheduled offers + "offer started" notifier (cron)
+  notifications/   FCM push, device tokens, inbox, order notification listener
+  realtime/        Socket.IO gateway (/realtime)
+  reports/         daily / range / summary reports + end-of-day push
+  settings/        restaurant profile, phones, opening hours, pause switch
+  common/          config, errors, interceptors, utils (time zones, money, regex)
+```
+
+Security defaults: helmet, per-IP rate limiting (stricter on auth routes), whitelisted request validation, escaped search input, password hashes and reset codes never selected, image uploads limited to 5 MB JPEG/PNG/WEBP, and timing-safe forgot-password responses.
