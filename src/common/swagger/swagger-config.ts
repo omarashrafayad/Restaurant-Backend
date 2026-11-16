@@ -5,8 +5,8 @@ import { APi_TAGS } from './constant.js';
 export class swaggerConfig {
   static setup(app: INestApplication): void {
     const config = new DocumentBuilder()
-      .setTitle('E-Commerce & Restaurant API')
-      .setDescription('Production-Ready E-Commerce & Restaurant NestJS Backend API Documentation')
+      .setTitle('Take Five Restaurant API')
+      .setDescription('Backend for the Take Five customer app and restaurant dashboard. Realtime events are documented in docs/REALTIME.md')
       .setVersion('1.0')
       .addBearerAuth(
         {
@@ -35,6 +35,9 @@ export class swaggerConfig {
       .addTag(APi_TAGS.ORDERS, 'Order placement, lifecycle, and analytics')
       .addTag(APi_TAGS.DELIVERY_ZONES, 'Delivery zones, fees, and validation')
       .addTag(APi_TAGS.PROMOTIONS, 'Promotions, campaign discounts, and active deals')
+      .addTag(APi_TAGS.SETTINGS, 'Restaurant profile, contact numbers, opening hours')
+      .addTag(APi_TAGS.NOTIFICATIONS, 'Push notifications, device tokens and inbox')
+      .addTag(APi_TAGS.REPORTS, 'Sales reports for the restaurant')
       .build();
 
     const document = SwaggerModule.createDocument(app, config);

@@ -10,4 +10,8 @@ export enum ModelNames {
   Coupons = 'Coupon',
   DeliveryZones = 'DeliveryZone',
   Promotions = 'Promotion',
+  Settings = 'Setting',
+  Notifications = 'Notification',
+  DeviceTokens = 'DeviceToken',
+  Counters = 'Counter',
 }

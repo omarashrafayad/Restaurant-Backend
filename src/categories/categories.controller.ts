@@ -13,6 +13,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { imageUploadOptions } from '../common/files/upload-options.js';
 import { ApiTags } from '@nestjs/swagger';
 import { APi_TAGS } from '../common/swagger/constant.js';
 import { CategoriesService } from './categories.service.js';
@@ -51,9 +52,9 @@ export class CategoriesController {
   }
 
   @CreateCategorySwagger()
-  // @Authorize(Roles.ADMIN, Roles.MANAGER)
+  @Authorize(Roles.ADMIN, Roles.MANAGER)
   @Post()
-  @UseInterceptors(FileInterceptor('image'))
+  @UseInterceptors(FileInterceptor('image', imageUploadOptions))
   async createCategory(
     @Body() body: CreateCategoryDto,
     @UploadedFile() file?: Express.Multer.File,
@@ -67,7 +68,7 @@ export class CategoriesController {
   @UpdateCategorySwagger()
   @Authorize(Roles.ADMIN, Roles.MANAGER)
   @Patch(':id')
-  @UseInterceptors(FileInterceptor('image'))
+  @UseInterceptors(FileInterceptor('image', imageUploadOptions))
   async updateCategory(
     @Param('id') id: string,
     @Body() body: UpdateCategoryDto,

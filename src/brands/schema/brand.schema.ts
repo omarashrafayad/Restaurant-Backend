@@ -27,18 +27,3 @@ export class Brand {
 }
 
 export const BrandSchema = SchemaFactory.createForClass(Brand);
-
-const setImageURL = (doc: any) => {
-  if (doc && doc.image && !doc.image.startsWith('http')) {
-    const baseUrl = process.env.BASE_URL || 'http://localhost:5000';
-    doc.image = `${baseUrl}/brands/${doc.image}`;
-  }
-};
-
-BrandSchema.post('init', (doc) => {
-  setImageURL(doc);
-});
-
-BrandSchema.post('save', (doc) => {
-  setImageURL(doc);
-});

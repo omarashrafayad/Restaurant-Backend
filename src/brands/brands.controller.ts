@@ -13,6 +13,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { imageUploadOptions } from '../common/files/upload-options.js';
 import { ApiTags } from '@nestjs/swagger';
 import { APi_TAGS } from '../common/swagger/constant.js';
 import { BrandsService } from './brands.service.js';
@@ -53,7 +54,7 @@ export class BrandsController {
   @CreateBrandSwagger()
   @Authorize(Roles.ADMIN, Roles.MANAGER)
   @Post()
-  @UseInterceptors(FileInterceptor('image'))
+  @UseInterceptors(FileInterceptor('image', imageUploadOptions))
   async createBrand(
     @Body() body: CreateBrandDto,
     @UploadedFile() file?: Express.Multer.File,
@@ -67,7 +68,7 @@ export class BrandsController {
   @UpdateBrandSwagger()
   @Authorize(Roles.ADMIN, Roles.MANAGER)
   @Patch(':id')
-  @UseInterceptors(FileInterceptor('image'))
+  @UseInterceptors(FileInterceptor('image', imageUploadOptions))
   async updateBrand(
     @Param('id') id: string,
     @Body() body: UpdateBrandDto,

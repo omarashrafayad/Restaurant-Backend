@@ -27,18 +27,3 @@ export class Category {
 }
 
 export const CategorySchema = SchemaFactory.createForClass(Category);
-
-const setImageURL = (doc: any) => {
-  if (doc && doc.image && !doc.image.startsWith('http')) {
-    const baseUrl = process.env.BASE_URL || 'http://localhost:5000';
-    doc.image = `${baseUrl}/categories/${doc.image}`;
-  }
-};
-
-CategorySchema.post('init', (doc) => {
-  setImageURL(doc);
-});
-
-CategorySchema.post('save', (doc) => {
-  setImageURL(doc);
-});

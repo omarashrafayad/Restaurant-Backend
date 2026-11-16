@@ -4,6 +4,7 @@ import { SubCategoryResponseDto } from '../dtos/subcategory-response.dto.js';
 import { PaginationDto } from '../../common/data-accsess/dto/pagination.dto.js';
 import { PaginatedResult } from '../../common/data-accsess/base-repository.js';
 import { plainToInstance } from 'class-transformer';
+import { containsRegex } from '../../common/utils/regex.util.js';
 
 @Injectable()
 export class FindAllSubCategoriesUseCase {
@@ -20,7 +21,7 @@ export class FindAllSubCategoriesUseCase {
     }
 
     if (query.keyword) {
-      filterQuery.name = { $regex: query.keyword, $options: 'i' };
+      filterQuery.name = containsRegex(query.keyword);
     }
 
     const result = await this.subCategoryRepository.findPaginated(filterQuery, {

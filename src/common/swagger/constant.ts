@@ -14,4 +14,7 @@ export enum APi_TAGS {
   ORDERS = 'Orders',
   DELIVERY_ZONES = 'Delivery Zones',
   PROMOTIONS = 'Promotions',
+  SETTINGS = 'Settings',
+  NOTIFICATIONS = 'Notifications',
+  REPORTS = 'Reports',
 }

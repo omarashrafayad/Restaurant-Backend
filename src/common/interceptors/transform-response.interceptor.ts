@@ -30,13 +30,13 @@ export class TransformResponseInterceptor implements NestInterceptor {
           };
         }
 
-        // Case 3: Already formatted response object (e.g. contains token, message, or data)
-        if (
-          typeof response === 'object' &&
-          response !== null &&
-          ('data' in response || 'token' in response || 'message' in response)
-        ) {
-          return response;
+        // Case 3: Already enveloped ({ data }, auth { token }, or a bare { status?, message })
+        if (typeof response === 'object' && !Array.isArray(response)) {
+          const keys = Object.keys(response);
+          const isEnvelope = keys.includes('data') || keys.includes('token');
+          const isBareMessage =
+            keys.includes('message') && keys.every((k) => k === 'message' || k === 'status');
+          if (isEnvelope || isBareMessage) return response;
         }
 
         // Case 4: Regular payload

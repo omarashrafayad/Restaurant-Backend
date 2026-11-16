@@ -4,6 +4,7 @@ import { BrandResponseDto } from '../dtos/brand-response.dto.js';
 import { PaginationDto } from '../../common/data-accsess/dto/pagination.dto.js';
 import { PaginatedResult } from '../../common/data-accsess/base-repository.js';
 import { plainToInstance } from 'class-transformer';
+import { containsRegex } from '../../common/utils/regex.util.js';
 
 @Injectable()
 export class FindAllBrandsUseCase {
@@ -13,7 +14,7 @@ export class FindAllBrandsUseCase {
     const filterQuery: Record<string, any> = {};
 
     if (query.keyword) {
-      filterQuery.name = { $regex: query.keyword, $options: 'i' };
+      filterQuery.name = containsRegex(query.keyword);
     }
 
     const result = await this.brandRepository.findPaginated(filterQuery, {

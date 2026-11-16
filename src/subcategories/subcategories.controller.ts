@@ -50,14 +50,14 @@ export class SubcategoriesController {
   }
 
   @CreateSubCategorySwagger()
-  // @Authorize(Roles.ADMIN, Roles.MANAGER)
+  @Authorize(Roles.ADMIN, Roles.MANAGER)
   @Post('subcategories')
   async createSubCategory(@Body() body: CreateSubCategoryDto) {
     return this.subcategoriesService.create(body);
   }
 
   // Nested route: POST /categories/:categoryId/subcategories
-  // @Authorize(Roles.ADMIN, Roles.MANAGER)
+  @Authorize(Roles.ADMIN, Roles.MANAGER)
   @Post('categories/:categoryId/subcategories')
   async createCategorySubCategory(
     @Param('categoryId') categoryId: string,
@@ -84,7 +84,7 @@ export class SubcategoriesController {
   }
 
   @DeleteSubCategorySwagger()
-  // @Authorize(Roles.ADMIN)
+  @Authorize(Roles.ADMIN)
   @Delete('subcategories/:id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteSubCategory(@Param('id') id: string) {
