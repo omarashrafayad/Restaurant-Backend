@@ -1,51 +1,50 @@
 import { Injectable } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { OrderRepository } from '../repository/order.repository.js';
 import { AddOrderReviewDto } from '../dtos/order-actions.dto.js';
 import { NotFoundException } from '../../common/error-handling/custom-excepction/not-found.exception.js';
 import { BadRequestException } from '../../common/error-handling/custom-excepction/bad-request.exceprions.js';
-import { ForbidenException } from '../../common/error-handling/custom-excepction/forbiden.exception.js';
+import { OrderStatus } from '../order-status.js';
+import { OrderEvents, OrderReviewedEvent } from '../order.events.js';
 
 @Injectable()
 export class AddOrderReviewUseCase {
-  constructor(private readonly orderRepository: OrderRepository) {}
+  constructor(
+    private readonly orderRepository: OrderRepository,
+    private readonly events: EventEmitter2,
+  ) {}
 
   async execute(orderId: string, userId: string, dto: AddOrderReviewDto) {
-    if (!dto.ratings || dto.ratings < 1 || dto.ratings > 5) {
-      throw new BadRequestException('Ratings value is required and must be between 1 and 5');
-    }
-
-    const order = await this.orderRepository.findById(orderId, { lean: false });
-    if (!order) {
+    const order = await this.orderRepository.model.findById(orderId).lean();
+    if (!order || order.user.toString() !== userId) {
       throw new NotFoundException(`No order found with id: ${orderId}`);
     }
-
-    const orderUserId = (order.user as any)?._id?.toString() || order.user.toString();
-    if (orderUserId !== userId) {
-      throw new ForbidenException('You are not authorized to review this order');
+    if (order.status !== OrderStatus.DELIVERED) {
+      throw new BadRequestException('You can only rate an order after it has been delivered');
     }
 
-    if (!order.isDelivered && order.status !== 'delivered') {
-      throw new BadRequestException(
-        'You can only review and rate an order after it has been delivered',
-      );
-    }
+    // Conditional update: a second review can never overwrite the first one.
+    const updated = await this.orderRepository.model.findOneAndUpdate(
+      { _id: order._id, review: { $exists: false } },
+      {
+        $set: {
+          review: {
+            ratings: Math.round(dto.ratings),
+            comment: dto.comment?.trim() || undefined,
+            createdAt: new Date(),
+          },
+        },
+      },
+      { returnDocument: 'after' },
+    );
+    if (!updated) throw new BadRequestException('You have already rated this order');
 
-    if (order.review && order.review.ratings) {
-      throw new BadRequestException('You have already submitted a review for this order');
-    }
-
-    order.review = {
-      ratings: Number(dto.ratings),
-      comment: dto.comment?.trim() || '',
-      createdAt: new Date(),
-    };
-
-    const updated = await (order as any).save();
-
+    const plain = updated.toObject();
+    this.events.emit(OrderEvents.REVIEWED, { order: plain } satisfies OrderReviewedEvent);
     return {
       status: 'success',
-      message: 'Order review submitted successfully. Thank you for your feedback!',
-      data: updated,
+      message: 'Thank you for your feedback!',
+      data: plain,
     };
   }
 }

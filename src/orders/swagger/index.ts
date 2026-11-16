@@ -10,19 +10,16 @@ import {
 
 export function CreateOrderSwagger() {
   return applyDecorators(
-    ApiOperation({ summary: 'Create cash on delivery order from cart' }),
-    ApiParam({ name: 'cartId', required: true, type: String }),
+    ApiOperation({ summary: 'Place a cash-on-delivery order from the logged-in customer cart' }),
     ApiBody({ type: CreateOrderDto }),
-    ApiResponse({ status: 201, description: 'Order created successfully' }),
-    ApiResponse({ status: 400, description: 'Cart empty / Delivery not available in city' }),
+    ApiResponse({ status: 201, description: 'Order created; includes restaurant contact numbers' }),
+    ApiResponse({ status: 400, description: 'Restaurant closed / cart empty / area not covered / below minimum order' }),
   );
 }
 
 export function FindAllOrdersSwagger() {
   return applyDecorators(
-    ApiOperation({ summary: 'Get list of orders (filtered to logged in user for customer role)' }),
-    ApiQuery({ name: 'page', required: false, type: Number }),
-    ApiQuery({ name: 'limit', required: false, type: Number }),
+    ApiOperation({ summary: 'Orders list: customers see their own, staff see all (filters: status, scope, date, keyword)' }),
     ApiResponse({ status: 200, description: 'Paginated orders returned' }),
   );
 }

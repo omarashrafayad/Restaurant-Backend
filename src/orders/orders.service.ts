@@ -1,93 +1,66 @@
 import { Injectable } from '@nestjs/common';
-import { CreateCashOrderUseCase } from './use-cases/create-cash-order.usecase.js';
-import { FindAllOrdersUseCase } from './use-cases/find-all-orders.usecase.js';
-import { FindOrderByIdUseCase } from './use-cases/find-order-by-id.usecase.js';
-import { DeleteOrderUseCase } from './use-cases/delete-order.usecase.js';
-import { AcceptOrderUseCase } from './use-cases/accept-order.usecase.js';
-import { RejectOrderUseCase } from './use-cases/reject-order.usecase.js';
-import { UpdateOrderStatusUseCase } from './use-cases/update-order-status.usecase.js';
-import { UpdateOrderPaidUseCase } from './use-cases/update-order-paid.usecase.js';
-import { UpdateOrderDeliveredUseCase } from './use-cases/update-order-delivered.usecase.js';
+import { CheckoutUseCase } from './use-cases/checkout.usecase.js';
+import { OrderLifecycleUseCase, TransitionActor } from './use-cases/order-lifecycle.usecase.js';
+import { FindOrdersUseCase, Viewer } from './use-cases/find-orders.usecase.js';
 import { AddOrderReviewUseCase } from './use-cases/add-order-review.usecase.js';
-import { GetDailySalesAnalyticsUseCase } from './use-cases/get-daily-sales-analytics.usecase.js';
-import { GetSalesSummaryAnalyticsUseCase } from './use-cases/get-sales-summary-analytics.usecase.js';
-import { CreateOrderDto } from './dtos/create-order.dto.js';
-import {
-  AcceptOrderDto,
-  AddOrderReviewDto,
-  RejectOrderDto,
-  UpdateOrderStatusDto,
-} from './dtos/order-actions.dto.js';
-import { PaginationDto } from '../common/data-accsess/dto/pagination.dto.js';
+import { ReorderUseCase } from './use-cases/reorder.usecase.js';
+import { CheckoutPreviewDto, CreateOrderDto } from './dtos/create-order.dto.js';
+import { QueryOrdersDto } from './dtos/query-orders.dto.js';
+import { AddOrderReviewDto } from './dtos/order-actions.dto.js';
+import { OrderStatus } from './order-status.js';
 import { OrderRepository } from './repository/order.repository.js';
+import { NotFoundException } from '../common/error-handling/custom-excepction/not-found.exception.js';
 
 @Injectable()
 export class OrdersService {
   constructor(
-    private readonly createCashOrderUseCase: CreateCashOrderUseCase,
-    private readonly findAllOrdersUseCase: FindAllOrdersUseCase,
-    private readonly findOrderByIdUseCase: FindOrderByIdUseCase,
-    private readonly deleteOrderUseCase: DeleteOrderUseCase,
-    private readonly acceptOrderUseCase: AcceptOrderUseCase,
-    private readonly rejectOrderUseCase: RejectOrderUseCase,
-    private readonly updateOrderStatusUseCase: UpdateOrderStatusUseCase,
-    private readonly updateOrderPaidUseCase: UpdateOrderPaidUseCase,
-    private readonly updateOrderDeliveredUseCase: UpdateOrderDeliveredUseCase,
-    private readonly addOrderReviewUseCase: AddOrderReviewUseCase,
-    private readonly getDailySalesUseCase: GetDailySalesAnalyticsUseCase,
-    private readonly getSalesSummaryUseCase: GetSalesSummaryAnalyticsUseCase,
+    private readonly checkout: CheckoutUseCase,
+    private readonly lifecycle: OrderLifecycleUseCase,
+    private readonly finder: FindOrdersUseCase,
+    private readonly review: AddOrderReviewUseCase,
+    private readonly reorderUseCase: ReorderUseCase,
     private readonly orderRepository: OrderRepository,
   ) {}
 
-  createCashOrder(userId: string, cartId: string, dto: CreateOrderDto) {
-    return this.createCashOrderUseCase.execute(userId, cartId, dto);
+  preview(userId: string, dto: CheckoutPreviewDto) {
+    return this.checkout.preview(userId, dto);
   }
 
-  findAll(userId: string, role: string, query: PaginationDto) {
-    return this.findAllOrdersUseCase.execute(userId, role, query);
+  async create(userId: string, dto: CreateOrderDto) {
+    const order = await this.checkout.create(userId, dto);
+    return this.finder.findOne(order._id.toString(), { userId, role: 'user' });
   }
 
-  findById(orderId: string, userId: string, role: string) {
-    return this.findOrderByIdUseCase.execute(orderId, userId, role);
+  findAll(viewer: Viewer, query: QueryOrdersDto) {
+    return this.finder.list(viewer, query);
   }
 
-  delete(orderId: string) {
-    return this.deleteOrderUseCase.execute(orderId);
+  findById(id: string, viewer: Viewer) {
+    return this.finder.findOne(id, viewer);
   }
 
-  acceptOrder(orderId: string, dto: AcceptOrderDto) {
-    return this.acceptOrderUseCase.execute(orderId, dto);
+  active(userId: string) {
+    return this.finder.active(userId);
   }
 
-  rejectOrder(orderId: string, dto: RejectOrderDto) {
-    return this.rejectOrderUseCase.execute(orderId, dto);
+  async transition(id: string, to: OrderStatus, actor: TransitionActor, opts?: { reason?: string; estimatedDeliveryMinutes?: number }) {
+    const order = await this.lifecycle.transition(id, to, actor, opts);
+    return this.finder.findOne(order._id.toString(), { userId: actor.userId, role: actor.type === 'restaurant' ? 'admin' : 'user' });
   }
 
-  updateStatus(orderId: string, dto: UpdateOrderStatusDto) {
-    return this.updateOrderStatusUseCase.execute(orderId, dto);
+  markPaid(id: string) {
+    return this.lifecycle.markPaid(id);
   }
 
-  updateToPaid(orderId: string) {
-    return this.updateOrderPaidUseCase.execute(orderId);
+  addReview(id: string, userId: string, dto: AddOrderReviewDto) {
+    return this.review.execute(id, userId, dto);
   }
 
-  updateToDelivered(orderId: string) {
-    return this.updateOrderDeliveredUseCase.execute(orderId);
+  reorder(id: string, userId: string) {
+    return this.reorderUseCase.execute(id, userId);
   }
 
-  addReview(orderId: string, userId: string, dto: AddOrderReviewDto) {
-    return this.addOrderReviewUseCase.execute(orderId, userId, dto);
-  }
-
-  getDailySalesAnalytics(dateStr?: string) {
-    return this.getDailySalesUseCase.execute(dateStr);
-  }
-
-  getSalesSummaryAnalytics() {
-    return this.getSalesSummaryUseCase.execute();
-  }
-
-  findRaw(filter: Record<string, any> = {}, options: any = {}) {
-    return this.orderRepository.find(filter, options);
+  delete(id: string) {
+    return this.lifecycle.deleteOrder(id);
   }
 }
