@@ -7,7 +7,6 @@ tsconfig.tsbuildinfo
 
 # Environment files
 .env
-.env.example
 .env.local
 .env.*.local
 
@@ -28,3 +27,7 @@ Thumbs.db
 # Uploads runtime files
 /uploads/*
 !/uploads/.gitkeep
+
+# Firebase service account
+firebase-service-account*.json
+*-firebase-adminsdk-*.json

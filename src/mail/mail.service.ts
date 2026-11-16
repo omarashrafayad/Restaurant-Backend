@@ -11,50 +11,41 @@ export interface SendEmailOptions {
 
 @Injectable()
 export class MailService {
-  private transporter: Transporter;
-  private logger = new Logger(MailService.name);
+  private readonly logger = new Logger(MailService.name);
+  private readonly transporter?: Transporter;
+  private readonly from: string;
 
-  constructor(private readonly configService: ConfigService<Environment>) {
-    const smtp = this.configService.get<Environment['smtp']>('smtp');
+  constructor(configService: ConfigService<Environment, true>) {
+    const smtp = configService.get('smtp', { infer: true });
+    this.from = `${smtp.fromName} <${smtp.auth?.user ?? 'no-reply@takefive.app'}>`;
 
-    if (smtp && smtp.auth?.user && smtp.auth?.pass) {
+    if (smtp.auth?.user && smtp.auth?.pass) {
       this.transporter = nodemailer.createTransport({
         host: smtp.host,
         port: smtp.port,
         secure: smtp.secure,
-        auth: {
-          user: smtp.auth.user,
-          pass: smtp.auth.pass,
-        },
+        auth: { user: smtp.auth.user, pass: smtp.auth.pass },
       });
     } else {
-      // In development or when credentials are not supplied, initialize transport with warning
-      this.transporter = nodemailer.createTransport({
-        host: smtp?.host || 'smtp.gmail.com',
-        port: smtp?.port || 465,
-        secure: smtp?.secure ?? true,
-      });
-      this.logger.warn('SMTP authentication credentials not fully configured; emails may fail to deliver.');
+      this.logger.warn('SMTP credentials are not configured (EMAIL_USER / EMAIL_PASSWORD); emails are disabled.');
     }
   }
 
-  async sendEmail(options: SendEmailOptions): Promise<void> {
-    const smtp = this.configService.get<Environment['smtp']>('smtp');
-    const sender = smtp?.auth?.user || 'eshop-noreply@example.com';
+  get isEnabled(): boolean {
+    return !!this.transporter;
+  }
 
-    const mailOptions = {
-      from: `E-shop App <${sender}>`,
+  /** Throws when delivery fails so callers can decide how to react. */
+  async sendEmail(options: SendEmailOptions): Promise<void> {
+    if (!this.transporter) {
+      throw new Error('Email delivery is not configured');
+    }
+    await this.transporter.sendMail({
+      from: this.from,
       to: options.email,
       subject: options.subject,
       text: options.message,
-    };
-
-    try {
-      await this.transporter.sendMail(mailOptions);
-      this.logger.log(`Email sent successfully to ${options.email}`);
-    } catch (err: any) {
-      this.logger.error(`Error sending email to ${options.email}:`, err.message);
-      throw err;
-    }
+    });
+    this.logger.log(`Email sent to ${options.email}`);
   }
 }

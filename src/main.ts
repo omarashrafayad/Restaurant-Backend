@@ -1,52 +1,32 @@
 import dns from 'dns';
-import path from 'path';
-import express from 'express';
 import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module.js';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { ConfigService } from '@nestjs/config';
-import { Logger, ValidationPipe } from '@nestjs/common';
+import { Logger } from '@nestjs/common';
+import { AppModule } from './app.module.js';
+import { configureApp } from './app.setup.js';
 import { swaggerConfig } from './common/swagger/swagger-config.js';
 import { Environment } from './common/configuration/environment.interface.js';
-
-// Setup IPv4-first and public DNS servers for MongoDB Atlas SRV resolution
-try {
-  dns.setDefaultResultOrder('ipv4first');
-  dns.setServers(['8.8.8.8', '8.8.4.4']);
-} catch {
-  // Ignore if custom DNS settings are restricted
+// Optional: some ISPs fail to resolve MongoDB Atlas SRV records. Set
+// DNS_SERVERS=8.8.8.8,8.8.4.4 to force public resolvers for this process.
+if (process.env.DNS_SERVERS) {
+  try {
+    dns.setDefaultResultOrder('ipv4first');
+    dns.setServers(process.env.DNS_SERVERS.split(',').map((s) => s.trim()));
+  } catch {
+    Logger.warn('Could not apply custom DNS_SERVERS', 'Bootstrap');
+  }
 }
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
-
-  // Enable CORS
-  app.enableCors();
-
-  // Global API route prefix
-  app.setGlobalPrefix('api/v1');
-
-  // Serve static uploads
-  app.use(express.static(path.join(process.cwd(), 'uploads')));
-  app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
-
-  // Global validation pipe
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      transform: true,
-      forbidNonWhitelisted: true,
-    }),
-  );
-
-  // Initialize Swagger
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  configureApp(app);
   swaggerConfig.setup(app);
 
-  const configService = app.get(ConfigService<Environment>);
-  const port = configService.get<number>('port') || process.env.PORT || 5000;
-
+  const port = app.get(ConfigService<Environment, true>).get('port', { infer: true });
   await app.listen(port);
   Logger.log(`Server started on port: ${port}`, 'Bootstrap');
-  Logger.log(`Swagger documentation available at http://localhost:${port}/api/docs and /api-docs`, 'Bootstrap');
+  Logger.log(`Swagger docs: http://localhost:${port}/api/docs`, 'Bootstrap');
 }
 
 await bootstrap();
