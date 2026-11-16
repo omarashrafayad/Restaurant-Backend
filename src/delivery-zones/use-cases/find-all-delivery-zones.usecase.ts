@@ -4,6 +4,7 @@ import { DeliveryZoneResponseDto } from '../dtos/delivery-zone-response.dto.js';
 import { PaginationDto } from '../../common/data-accsess/dto/pagination.dto.js';
 import { PaginatedResult } from '../../common/data-accsess/base-repository.js';
 import { plainToInstance } from 'class-transformer';
+import { containsRegex } from '../../common/utils/regex.util.js';
 
 @Injectable()
 export class FindAllDeliveryZonesUseCase {
@@ -14,8 +15,8 @@ export class FindAllDeliveryZonesUseCase {
 
     if (query.keyword) {
       filterQuery.$or = [
-        { name: { $regex: query.keyword, $options: 'i' } },
-        { nameAr: { $regex: query.keyword, $options: 'i' } },
+        { name: containsRegex(query.keyword) },
+        { nameAr: containsRegex(query.keyword) },
       ];
     }
 

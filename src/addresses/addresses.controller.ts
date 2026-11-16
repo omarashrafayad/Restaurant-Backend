@@ -5,13 +5,14 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Patch,
   Param,
   Post,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { APi_TAGS } from '../common/swagger/constant.js';
 import { AddressesService } from './addresses.service.js';
-import { AddAddressDto } from './dtos/add-address.dto.js';
+import { AddAddressDto, UpdateAddressDto } from './dtos/add-address.dto.js';
 import { CurrentAccount, Principal } from '../auth/decorator/current-account.decorator.js';
 
 @ApiTags(APi_TAGS.ADDRESSES)
@@ -27,6 +28,16 @@ export class AddressesController {
     @Body() body: AddAddressDto,
   ) {
     return this.addressesService.addAddress(principal.user._id, body);
+  }
+
+  @ApiOperation({ summary: 'Update a delivery address (or make it the default)' })
+  @Patch(':addressId')
+  async updateAddress(
+    @CurrentAccount() principal: Principal,
+    @Param('addressId') addressId: string,
+    @Body() body: UpdateAddressDto,
+  ) {
+    return this.addressesService.updateAddress(principal.user._id, addressId, body);
   }
 
   @ApiOperation({ summary: 'Delete a delivery address' })

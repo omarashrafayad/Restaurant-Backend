@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { DeliveryZoneRepository } from '../repository/delivery-zone.repository.js';
 import { BadRequestException } from '../../common/error-handling/custom-excepction/bad-request.exceprions.js';
+import { exactRegex } from '../../common/utils/regex.util.js';
 
 @Injectable()
 export class CheckDeliveryFeeUseCase {
@@ -15,8 +16,8 @@ export class CheckDeliveryFeeUseCase {
     const zone = await this.zoneRepository.findOne({
       isActive: true,
       $or: [
-        { name: { $regex: new RegExp(`^${trimmed}$`, 'i') } },
-        { nameAr: { $regex: new RegExp(`^${trimmed}$`, 'i') } },
+        { name: exactRegex(trimmed) },
+        { nameAr: exactRegex(trimmed) },
       ],
     });
 

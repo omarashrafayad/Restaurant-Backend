@@ -10,7 +10,7 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { APi_TAGS } from '../common/swagger/constant.js';
 import { DeliveryZonesService } from './delivery-zones.service.js';
 import { CreateDeliveryZoneDto } from './dtos/create-delivery-zone.dto.js';
@@ -45,6 +45,13 @@ export class DeliveryZonesController {
   @Post('check-fee')
   async checkDeliveryFeePost(@Body() body: CheckDeliveryFeeDto) {
     return this.deliveryZonesService.checkDeliveryFee(body.city);
+  }
+
+  @ApiOperation({ summary: 'Active delivery areas with fee, minimum order and ETA (area picker in the app)' })
+  @Public()
+  @Get('active')
+  async getActiveZones() {
+    return this.deliveryZonesService.findActive();
   }
 
   @FindAllDeliveryZonesSwagger()

@@ -53,4 +53,13 @@ export class DeliveryZonesService {
   findRaw(filter: Record<string, any> = {}, options: any = {}) {
     return this.zoneRepository.find(filter, options);
   }
+
+  async findActive() {
+    const zones = await this.zoneRepository.model
+      .find({ isActive: true })
+      .select('name nameAr deliveryFee minOrderAmount estimatedDeliveryMinutes')
+      .sort('name')
+      .lean();
+    return { status: 'success', results: zones.length, data: zones };
+  }
 }

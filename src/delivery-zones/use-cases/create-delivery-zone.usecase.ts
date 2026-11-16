@@ -4,6 +4,7 @@ import { CreateDeliveryZoneDto } from '../dtos/create-delivery-zone.dto.js';
 import { DeliveryZoneResponseDto } from '../dtos/delivery-zone-response.dto.js';
 import { BadRequestException } from '../../common/error-handling/custom-excepction/bad-request.exceprions.js';
 import { plainToInstance } from 'class-transformer';
+import { exactRegex } from '../../common/utils/regex.util.js';
 
 @Injectable()
 export class CreateDeliveryZoneUseCase {
@@ -11,7 +12,7 @@ export class CreateDeliveryZoneUseCase {
 
   async execute(dto: CreateDeliveryZoneDto): Promise<DeliveryZoneResponseDto> {
     const existing = await this.zoneRepository.findOne({
-      name: { $regex: new RegExp(`^${dto.name.trim()}$`, 'i') },
+      name: exactRegex(dto.name.trim()),
     });
 
     if (existing) {
