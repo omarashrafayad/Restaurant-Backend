@@ -1,12 +1,20 @@
-import { IsNotEmpty, IsNumber, Min } from 'class-validator';
+import { IsInt, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
 import { Type } from 'class-transformer';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiPropertyOptional } from '@nestjs/swagger';
+import { MAX_ITEM_QUANTITY } from '../schema/cart.schema.js';
 
 export class UpdateCartQuantityDto {
-  @ApiProperty({ example: 2 })
-  @IsNotEmpty({ message: 'Quantity is required' })
+  @ApiPropertyOptional({ example: 2 })
+  @IsOptional()
   @Type(() => Number)
-  @IsNumber()
+  @IsInt()
   @Min(1)
-  quantity: number;
+  @Max(MAX_ITEM_QUANTITY)
+  quantity?: number;
+
+  @ApiPropertyOptional({ example: 'Extra spicy' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  notes?: string;
 }

@@ -54,19 +54,21 @@ export class CartController {
     return this.cartService.applyCoupon(principal.user._id, body.coupon);
   }
 
-  @ApiOperation({ summary: 'Update quantity of specific cart item' })
-  @ApiResponse({ status: 200, description: 'Item quantity updated' })
+  @ApiOperation({ summary: 'Remove the applied coupon' })
+  @Delete('applyCoupon')
+  async removeCoupon(@CurrentAccount() principal: Principal) {
+    return this.cartService.removeCoupon(principal.user._id);
+  }
+
+  @ApiOperation({ summary: 'Update quantity and/or kitchen notes of a cart item' })
+  @ApiResponse({ status: 200, description: 'Item updated' })
   @Patch(':itemId')
-  async updateCartItemQuantity(
+  async updateCartItem(
     @CurrentAccount() principal: Principal,
     @Param('itemId') itemId: string,
     @Body() body: UpdateCartQuantityDto,
   ) {
-    return this.cartService.updateCartItemQuantity(
-      principal.user._id,
-      itemId,
-      body.quantity,
-    );
+    return this.cartService.updateCartItem(principal.user._id, itemId, body);
   }
 
   @ApiOperation({ summary: 'Remove a specific item from shopping cart' })
