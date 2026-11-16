@@ -1,0 +1,17 @@
+export enum APi_TAGS {
+  AUTH = 'Auth',
+  USERS = 'Users',
+  CATEGORIES = 'Categories',
+  SUBCATEGORIES = 'SubCategories',
+  BRANDS = 'Brands',
+  PRODUCTS = 'Products',
+  HOME = 'Home',
+  REVIEWS = 'Reviews',
+  WISHLIST = 'Wishlist',
+  ADDRESSES = 'Addresses',
+  COUPONS = 'Coupons',
+  CART = 'Cart',
+  ORDERS = 'Orders',
+  DELIVERY_ZONES = 'Delivery Zones',
+  PROMOTIONS = 'Promotions',
+}

@@ -1,0 +1,30 @@
+# Compiled output
+/dist
+tsconfig.tsbuildinfo
+
+# Node dependencies
+/node_modules
+
+# Environment files
+.env
+.env.example
+.env.local
+.env.*.local
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.idea
+.vscode
+*.sublime-project
+*.sublime-workspace
+
+# Uploads runtime files
+/uploads/*
+!/uploads/.gitkeep

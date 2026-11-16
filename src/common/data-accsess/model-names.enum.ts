@@ -1,0 +1,13 @@
+export enum ModelNames {
+  Users = 'User',
+  Products = 'Product',
+  Categories = 'Category',
+  SubCategories = 'SubCategory',
+  Brands = 'Brand',
+  Reviews = 'Review',
+  Cart = 'Cart',
+  Orders = 'Order',
+  Coupons = 'Coupon',
+  DeliveryZones = 'DeliveryZone',
+  Promotions = 'Promotion',
+}
